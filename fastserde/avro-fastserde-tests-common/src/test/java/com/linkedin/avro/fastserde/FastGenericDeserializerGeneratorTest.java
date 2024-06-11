@@ -267,6 +267,26 @@ public class FastGenericDeserializerGeneratorTest {
   }
 
   @Test(groups = {"deserializationTest"}, dataProvider = "Implementation")
+  public void shouldReadNonUnionEnumTypesWithUnionEnumTypes(Implementation implementation) {
+    // given
+    Schema enumSchema = createEnumSchema("testEnum", new String[]{"A", "B"});
+    Schema writerSchema = createRecord(
+            createField("testEnum", enumSchema));
+    Schema readerSchema = createRecord(
+            createUnionFieldWithNull("testEnum", enumSchema));
+
+    GenericRecord originalRecord = new GenericData.Record(writerSchema);
+    originalRecord.put("testEnum",
+            AvroCompatibilityHelper.newEnumSymbol(enumSchema, "A"));//new GenericData.EnumSymbol("A"));
+
+    // when
+    GenericRecord record = implementation.decode(writerSchema, readerSchema, genericDataAsDecoder(originalRecord));
+
+    // then
+    Assert.assertEquals("A", record.get("testEnum").toString());
+  }
+
+  @Test(groups = {"deserializationTest"}, dataProvider = "Implementation")
   public void shouldReadEnumDefault(Implementation implementation) {
     if (!Utils.isAbleToSupportEnumDefault()) {
       // skip if enum default is not supported in the schema
